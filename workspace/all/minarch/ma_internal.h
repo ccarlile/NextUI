@@ -27,6 +27,7 @@ struct Core {
 	const char saves_dir[MAX_PATH]; // eg. /mnt/sdcard/Saves/GB
 	const char bios_dir[MAX_PATH]; // eg. /mnt/sdcard/Bios/GB
 	const char cheats_dir[MAX_PATH]; // eg. /mnt/sdcard/Cheats/GB
+	const char walkthroughs_dir[MAX_PATH]; // eg. /mnt/sdcard/Walkthroughs/GB
 	const char overlays_dir[MAX_PATH]; // eg. /mnt/sdcard/Cheats/GB
 
 	double fps;

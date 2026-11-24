@@ -111,6 +111,15 @@ Cheats use RetroArch .cht file format. Many cheat files are here <https://github
 Cheat file name needs to match ROM name, and go underneath the "Cheats" directory. For example, `/Cheats/GB/Super Mario Land (World).zip.cht`. When a cheat file is detected, it will show up in the "cheats" menu item ingame. Not all cheats work with all cores, may want to clean up files to just the cheats you want.
 
 ----------------------------------------
+Walkthroughs
+
+Walkthroughs are plain .txt files (eg. guides from GameFAQs). Like cheats, the file name needs to match the ROM name, and go underneath the "Walkthroughs" directory. For example, `/Walkthroughs/GB/Super Mario Land (World).zip.txt` or simply `/Walkthroughs/GB/Super Mario Land.txt`. Open it from the "Walkthrough" item in the ingame Options menu.
+
+Up/Down scrolls, Left/Right or L1/R1 page, SELECT changes the text size and B closes the walkthrough. Your place is remembered, even after quitting the game.
+
+X bookmarks the line at the top of the screen (press it again to remove the bookmark). Y lists your bookmarks: A jumps to one, X deletes it. L2/R2 jump to the previous/next bookmark while reading.
+
+----------------------------------------
 
 Disc-based games
 

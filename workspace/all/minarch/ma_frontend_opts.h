@@ -67,6 +67,7 @@ int OptionFrontend_openMenu(MenuList* list, int i);
 int OptionEmulator_openMenu(MenuList* list, int index);
 int OptionShaders_openMenu(MenuList* list, int i);
 int OptionCheats_openMenu(MenuList* list, int i);
+int OptionWalkthrough_openMenu(MenuList* list, int i); // defined in ma_walkthrough.c
 int OptionControls_openMenu(MenuList* list, int i);
 int OptionShortcuts_openMenu(MenuList* list, int i);
 int OptionSaveChanges_openMenu(MenuList* list, int i);

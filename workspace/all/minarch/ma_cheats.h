@@ -4,10 +4,11 @@
 #include <stdbool.h>
 
 #include "defines.h"
+#include "ma_game.h"
 
 #define CHEAT_TYPE_SET_TO_VALUE 1
 #define CHEAT_MAX_COUNT         4096
-#define CHEAT_MAX_PATHS         48
+#define CHEAT_MAX_PATHS         SIDECAR_MAX_PATHS
 #define CHEAT_MAX_DISPLAY_PATHS 8
 #define CHEAT_MAX_LIST_LENGTH   (CHEAT_MAX_DISPLAY_PATHS * MAX_PATH)
 

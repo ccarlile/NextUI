@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <zip.h>
 #include <libgen.h>
+#include <glob.h>
 
 #include "ma_internal.h"
 #include "ma_game.h"
@@ -269,4 +270,117 @@ int extract_zip(char** extensions)
 	}
 
 	return 0;
+}
+
+///////////////////////////////
+// sidecar files, eg. cheats and walkthroughs
+
+// return variations with/without extensions and other cruft
+void Game_getSidecarPaths(const char* dir, const char* ext, char paths[SIDECAR_MAX_PATHS][MAX_PATH], int* count) {
+	// reserve a few entries at the end, for sanitized name and glob patterns
+	const int sanitized_paths_count = 3;
+
+	// Generate possible paths, ordered by most likely to be used (pre v6.2.3 style first)
+	sprintf(paths[(*count)++], "%s/%s.%s", dir, game.name, ext); // /mnt/SDCARD/Cheats/GB/Super Example World.<ext>.cht
+	if(CFG_getUseExtractedFileName())
+		sprintf(paths[(*count)++], "%s/%s.%s", dir, game.alt_name, ext); // /mnt/SDCARD/Cheats/GB/Super Example World (USA).<ext>.cht
+
+	// game.alt_name, but with all extension-like stuff removed (apart from the sidecar's own)
+	// eg. Super Example World (USA).zip -> Super Example World (USA).cht
+	{
+		int i = 0;
+		char* rom_ext;
+		char exts[128];
+		if (core.extensions == NULL || strlen(core.extensions) >= sizeof(exts)) {
+			LOG_info("Invalid or too long core.extensions\n");
+			return;
+		}
+
+		strcpy(exts, core.extensions);
+		while ((rom_ext = strtok(i ? NULL : exts, "|"))) {
+			// sanitized_paths_count slots are reserved for sanitized rom name, see below
+			if (*count >= SIDECAR_MAX_PATHS - sanitized_paths_count) {
+				LOG_info("Maximum %s paths reached, stopping\n", ext);
+				break;
+			}
+
+			char rom_name[MAX_PATH];
+			if (strlen(game.alt_name) >= MAX_PATH) {
+				LOG_info("game.alt_name too long, skipping\n");
+				i++;
+				continue;
+			}
+
+			strcpy(rom_name, game.alt_name);
+			char* tmp = strrchr(rom_name, '.');
+			if (tmp != NULL && strlen(tmp) > 2 && strlen(tmp) <= 5) {
+				tmp[0] = '\0';
+
+				// Add length check before sprintf to prevent buffer overflow
+				int needed_len = strlen(dir) + strlen(rom_name) + strlen(rom_ext) + strlen(ext) + 6; // "/", ".", ".", NUL and some slack
+				if (needed_len < MAX_PATH) {
+					sprintf(paths[(*count)++], "%s/%s.%s.%s", dir, rom_name, rom_ext, ext);
+				} else {
+					LOG_info("Path too long, skipping: %s/%s.%s.%s\n", dir, rom_name, rom_ext, ext);
+				}
+			}
+			i++;
+		}
+	}
+
+	// Sanitized: remove extension and other cruft
+	// eg. Super Example World (USA).zip -> Super Example World
+	//     Super Example World (USA) [!].7z -> Super Example World
+	//     Super Example World (USA) (Rev 1).rar -> Super Example World
+	// Important: update `sanitized_paths_count` if adding more sanitized variations
+	char rom_name[MAX_PATH];
+	getDisplayName(game.alt_name, rom_name);
+	sprintf(paths[(*count)++], "%s/%s.%s", dir, rom_name, ext); // /mnt/SDCARD/Cheats/GB/Super Example World.cht
+	// Respect map.txt: use alias if available
+	// eg. 1941.zip	-> 1941: Counter Attack
+	if(getAlias(game.path, rom_name))
+		sprintf(paths[(*count)++], "%s/%s.%s", dir, rom_name, ext); // /mnt/SDCARD/Cheats/GB/Super Example World.cht
+
+	// Santitized alias, ignoring all extra cruft - including Cheat specifics like "(Game Breaker)" etc.
+	// This is a wildcard that may match something unexpected, but also may find something when nothing else does.
+	getAlias(game.path, rom_name);
+	sprintf(paths[(*count)++], "%s/%s*.%s", dir, rom_name, ext); // /mnt/SDCARD/Cheats/GB/Super Example World*.cht
+}
+
+bool Game_findSidecar(const char* dir, const char* ext, char* out_path) {
+	char paths[SIDECAR_MAX_PATHS][MAX_PATH];
+	int path_count = 0;
+	Game_getSidecarPaths(dir, ext, paths, &path_count);
+
+	char suffix[16];
+	snprintf(suffix, sizeof(suffix), ".%s", ext);
+
+	out_path[0] = '\0';
+	for (int i=0; i<path_count; i++) {
+		LOG_info("Checking %s path: %s\n", ext, paths[i]);
+		// handle wildcards
+		if (strchr(paths[i],'*')) {
+			glob_t glob_results;
+			memset(&glob_results, 0, sizeof(glob_t));
+			int glob_ret = glob(paths[i], 0, NULL, &glob_results);
+
+			if (glob_ret == 0 && glob_results.gl_pathc > 0) {
+				for (size_t gi = 0; gi < glob_results.gl_pathc; ++gi) {
+					if (!suffixMatch(suffix, glob_results.gl_pathv[gi])) continue;
+					if (exists(glob_results.gl_pathv[gi])) {
+						strcpy(out_path, glob_results.gl_pathv[gi]);
+						LOG_info("Found potential %s file: %s\n", ext, out_path);
+						break;
+					}
+				}
+			}
+			globfree(&glob_results);
+			if (out_path[0] == '\0') continue; // no match
+		} else {
+			if (!exists(paths[i])) continue;
+			strcpy(out_path, paths[i]);
+		}
+		return true; // found a valid file
+	}
+	return false;
 }

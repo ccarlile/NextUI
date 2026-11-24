@@ -944,6 +944,12 @@ static int OptionAchievements_openMenu(MenuList* list, int i) {
 	return MENU_CALLBACK_NOP;
 }
 
+// options_menu.items indices that are toggled at runtime, see Options_updateVisibility
+enum {
+	OPTIONS_ITEM_ACHIEVEMENTS = 7,
+	OPTIONS_ITEM_SAVE_CHANGES = 8,
+};
+
 static MenuList options_menu = {
 	.type = MENU_LIST,
 	.items = (MenuItem[]) {
@@ -951,6 +957,7 @@ static MenuList options_menu = {
 		{"Emulator",.on_confirm=OptionEmulator_openMenu},
 		{"Shaders",.on_confirm=OptionShaders_openMenu},
 		{"Cheats",.on_confirm=OptionCheats_openMenu},
+		{"Walkthrough",.on_confirm=OptionWalkthrough_openMenu},
 		{"Controls",.on_confirm=OptionControls_openMenu},
 		{"Shortcuts",.on_confirm=OptionShortcuts_openMenu},
 		{"Achievements",.on_confirm=OptionAchievements_openMenu},
@@ -961,25 +968,25 @@ static MenuList options_menu = {
 };
 
 // Track the index of Save Changes menu item (changes based on RA visibility)
-static int save_changes_index = 7;
+static int save_changes_index = OPTIONS_ITEM_SAVE_CHANGES;
 
 // Update options menu visibility based on RA enable state
 static void Options_updateVisibility(void) {
 	if (CFG_getRAEnable()) {
-		// RA enabled: show Achievements at index 6, Save Changes at index 7
-		options_menu.items[6].name = "Achievements";
-		options_menu.items[6].on_confirm = OptionAchievements_openMenu;
-		options_menu.items[7].name = "Save Changes";
-		options_menu.items[7].on_confirm = OptionSaveChanges_openMenu;
-		save_changes_index = 7;
+		// RA enabled: show Achievements, then Save Changes
+		options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].name = "Achievements";
+		options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].on_confirm = OptionAchievements_openMenu;
+		options_menu.items[OPTIONS_ITEM_SAVE_CHANGES].name = "Save Changes";
+		options_menu.items[OPTIONS_ITEM_SAVE_CHANGES].on_confirm = OptionSaveChanges_openMenu;
+		save_changes_index = OPTIONS_ITEM_SAVE_CHANGES;
 	} else {
-		// RA disabled: hide Achievements, move Save Changes to index 6
-		options_menu.items[6].name = "Save Changes";
-		options_menu.items[6].desc = NULL;
-		options_menu.items[6].on_confirm = OptionSaveChanges_openMenu;
-		options_menu.items[7].name = NULL;
-		options_menu.items[7].on_confirm = NULL;
-		save_changes_index = 6;
+		// RA disabled: hide Achievements, move Save Changes into its slot
+		options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].name = "Save Changes";
+		options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].desc = NULL;
+		options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].on_confirm = OptionSaveChanges_openMenu;
+		options_menu.items[OPTIONS_ITEM_SAVE_CHANGES].name = NULL;
+		options_menu.items[OPTIONS_ITEM_SAVE_CHANGES].on_confirm = NULL;
+		save_changes_index = OPTIONS_ITEM_ACHIEVEMENTS;
 	}
 }
 
@@ -997,11 +1004,11 @@ void OptionAchievements_updateDesc(void) {
 		RA_getAchievementSummary(&unlocked, &total);
 		if (total > 0) {
 			snprintf(ach_desc_buffer, sizeof(ach_desc_buffer), "%u / %u unlocked", unlocked, total);
-			options_menu.items[6].desc = ach_desc_buffer;
+			options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].desc = ach_desc_buffer;
 			return;
 		}
 	}
-	options_menu.items[6].desc = NULL;
+	options_menu.items[OPTIONS_ITEM_ACHIEVEMENTS].desc = NULL;
 }
 
 #define OPTION_PADDING 8

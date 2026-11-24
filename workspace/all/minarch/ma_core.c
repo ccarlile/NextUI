@@ -8,6 +8,7 @@
 #include "ma_audio.h"
 #include "ma_input.h"
 #include "ma_cheats.h"
+#include "ma_walkthrough.h"
 #include "ma_core.h"
 
 
@@ -75,6 +76,7 @@ void Core_open(const char* core_path, const char* tag_name) {
 	sprintf((char*)core.saves_dir, SDCARD_PATH "/Saves/%s", core.tag);
 	sprintf((char*)core.bios_dir, SDCARD_PATH "/Bios/%s", core.tag);
 	sprintf((char*)core.cheats_dir, SDCARD_PATH "/Cheats/%s", core.tag);
+	sprintf((char*)core.walkthroughs_dir, SDCARD_PATH "/Walkthroughs/%s", core.tag);
 	sprintf((char*)core.overlays_dir, SDCARD_PATH "/Overlays/%s", core.tag);
 	
 	char cmd[512];
@@ -142,6 +144,7 @@ void Core_load(void) {
 
 	if (Cheats_load())
 		Core_applyCheats(&cheatcodes);
+	Walkthrough_init();
 
 	SRAM_read();
 	RTC_read();
@@ -163,6 +166,7 @@ void Core_quit(void) {
 	if (core.initialized) {
 		SRAM_write();
 		Cheats_free();
+		Walkthrough_free();
 		RTC_write();
 		core.unload_game();
 		core.deinit();
